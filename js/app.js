@@ -6,6 +6,7 @@ import {
   initDB,
   getTransactions,
   addTransaction,
+  updateTransaction,
   deleteTransaction,
   getGoals,
   addCategory,
@@ -287,6 +288,7 @@ function renderTransactionList(transactions, containerEl, allowDelete = true) {
           <span class="tx-amount ${isIncome ? 'income' : 'expense'}">
             ${isIncome ? '+' : '-'}${formatMoney(tx.amount)}
           </span>
+          <button class="tx-edit-btn" data-id="${tx.id}" title="Редактировать" aria-label="Редактировать операцию">✏️</button>
           ${
             allowDelete
               ? `<button class="tx-delete-btn" data-id="${tx.id}" title="Удалить" aria-label="Удалить операцию">✕</button>`
@@ -294,6 +296,17 @@ function renderTransactionList(transactions, containerEl, allowDelete = true) {
           }
         </div>
       `;
+
+      // Клик по карандашу открывает окно редактирования
+      item.querySelector('.tx-edit-btn')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openEditTransactionModal(tx);
+      });
+
+      // Клик по всей строке операции также открывает редактирование (iOS/Android паттерн)
+      item.addEventListener('click', () => {
+        openEditTransactionModal(tx);
+      });
 
       if (allowDelete) {
         item.querySelector('.tx-delete-btn')?.addEventListener('click', async (e) => {
@@ -456,11 +469,24 @@ async function renderSettingsTab() {
 
 let currentAddType = 'expense';
 let selectedCategory = '';
+let editingTxId = null;
 
 export function openAddTransactionModal(type = 'expense') {
+  editingTxId = null;
   currentAddType = type;
   const modal = document.getElementById('modal-add-tx');
   if (!modal) return;
+
+  // Обновляем заголовок и кнопку для создания
+  const titleEl = document.getElementById('modal-tx-title');
+  if (titleEl) titleEl.textContent = 'Новая операция';
+  const submitBtn = document.getElementById('btn-submit-tx');
+  if (submitBtn) submitBtn.textContent = 'Записать';
+  const deleteBtn = document.getElementById('btn-delete-modal-tx');
+  if (deleteBtn) deleteBtn.style.display = 'none';
+
+  const idInput = document.getElementById('tx-input-id');
+  if (idInput) idInput.value = '';
 
   // Обновляем iOS переключатель доход/расход с плавающим слайдером
   const slider = document.getElementById('segmented-slider');
@@ -496,17 +522,81 @@ export function openAddTransactionModal(type = 'expense') {
   vibrate(20);
 }
 
-function renderCategorySelectionGrid(type) {
+export function openEditTransactionModal(tx) {
+  if (!tx) return;
+  editingTxId = tx.id;
+  currentAddType = tx.type || 'expense';
+  const modal = document.getElementById('modal-add-tx');
+  if (!modal) return;
+
+  // Обновляем заголовок и кнопку для режима редактирования
+  const titleEl = document.getElementById('modal-tx-title');
+  if (titleEl) titleEl.textContent = 'Редактирование операции';
+  const submitBtn = document.getElementById('btn-submit-tx');
+  if (submitBtn) submitBtn.textContent = 'Сохранить изменения';
+  const deleteBtn = document.getElementById('btn-delete-modal-tx');
+  if (deleteBtn) deleteBtn.style.display = 'block';
+
+  const idInput = document.getElementById('tx-input-id');
+  if (idInput) idInput.value = tx.id;
+
+  // Обновляем iOS переключатель доход/расход
+  const slider = document.getElementById('segmented-slider');
+  const expBtn = document.getElementById('btn-type-expense');
+  const incBtn = document.getElementById('btn-type-income');
+  if (tx.type === 'income') {
+    slider?.classList.add('income');
+    incBtn?.classList.add('active');
+    expBtn?.classList.remove('active');
+  } else {
+    slider?.classList.remove('income');
+    expBtn?.classList.add('active');
+    incBtn?.classList.remove('active');
+  }
+
+  // Заполняем поля формы данными редактируемой операции
+  const dateInput = document.getElementById('tx-input-date');
+  if (dateInput) {
+    dateInput.value = tx.date || new Date().toISOString().split('T')[0];
+  }
+
+  const amountInput = document.getElementById('tx-input-amount');
+  if (amountInput) {
+    amountInput.value = tx.amount || '';
+  }
+
+  const titleInput = document.getElementById('tx-input-title');
+  if (titleInput) {
+    titleInput.value = tx.title || '';
+  }
+
+  const noteInput = document.getElementById('tx-input-note');
+  if (noteInput) {
+    noteInput.value = tx.note || '';
+  }
+
+  renderCategorySelectionGrid(tx.type || 'expense', tx.category);
+
+  modal.classList.add('active');
+  vibrate(20);
+}
+
+function renderCategorySelectionGrid(type, preselectedCatName = null) {
   const grid = document.getElementById('tx-category-grid');
   if (!grid) return;
   grid.innerHTML = '';
 
   const relevantCats = state.categories.filter((c) => c.type === type);
-  selectedCategory = relevantCats[0]?.name || '';
+  if (preselectedCatName && relevantCats.some((c) => c.name === preselectedCatName)) {
+    selectedCategory = preselectedCatName;
+  } else {
+    selectedCategory = relevantCats[0]?.name || '';
+  }
 
-  relevantCats.forEach((cat, idx) => {
+  relevantCats.forEach((cat) => {
+    const isSelected = cat.name === selectedCategory;
     const tile = document.createElement('div');
-    tile.className = `category-tile ${idx === 0 ? 'selected' : ''}`;
+    tile.className = `category-tile ${isSelected ? 'selected' : ''}`;
     tile.innerHTML = `
       <span class="tile-icon">${cat.icon}</span>
       <span class="tile-name">${escapeHtml(cat.name)}</span>
@@ -729,25 +819,60 @@ function initEventListeners() {
       return;
     }
 
-    const tx = {
-      date,
-      type: currentAddType,
-      category: selectedCategory || (currentAddType === 'income' ? 'Другой доход' : 'Другое'),
-      amount,
-      title: title || selectedCategory,
-      note
-    };
+    if (editingTxId) {
+      // Редактирование существующей операции
+      const originalTx = state.transactions.find((t) => t.id === editingTxId);
+      const updatedTx = {
+        ...(originalTx || {}),
+        id: editingTxId,
+        date,
+        type: currentAddType,
+        category: selectedCategory || (currentAddType === 'income' ? 'Другой доход' : 'Другое'),
+        amount,
+        title: title || selectedCategory,
+        note
+      };
 
-    await addTransaction(tx);
-    closeModal('modal-add-tx');
-    showToast(currentAddType === 'income' ? `+${formatMoney(amount)} записано!` : `-${formatMoney(amount)} записано!`, 'success');
-    vibrate(30);
+      await updateTransaction(updatedTx);
+      closeModal('modal-add-tx');
+      showToast('Операция изменена! ✏️', 'success');
+      vibrate(30);
 
-    // Фоновая синхронизация с Google Таблицей, если настроена
-    syncTransactionToSheets(tx).catch(console.warn);
+      // Фоновая синхронизация с Google Таблицей, если настроена
+      syncTransactionToSheets(updatedTx).catch(console.warn);
+
+      editingTxId = null;
+    } else {
+      // Добавление новой операции
+      const tx = {
+        date,
+        type: currentAddType,
+        category: selectedCategory || (currentAddType === 'income' ? 'Другой доход' : 'Другое'),
+        amount,
+        title: title || selectedCategory,
+        note
+      };
+
+      await addTransaction(tx);
+      closeModal('modal-add-tx');
+      showToast(currentAddType === 'income' ? `+${formatMoney(amount)} записано!` : `-${formatMoney(amount)} записано!`, 'success');
+      vibrate(30);
+
+      // Фоновая синхронизация с Google Таблицей, если настроена
+      syncTransactionToSheets(tx).catch(console.warn);
+    }
 
     await refreshData();
     renderApp();
+  });
+
+  // Кнопка удаления операции прямо из модального окна редактирования
+  document.getElementById('btn-delete-modal-tx')?.addEventListener('click', async () => {
+    if (!editingTxId) return;
+    const idToDelete = editingTxId;
+    closeModal('modal-add-tx');
+    editingTxId = null;
+    await handleDeleteTransaction(idToDelete);
   });
 
   // Фильтры в списке операций

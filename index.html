@@ -356,16 +356,17 @@
       </button>
     </nav>
 
-    <!-- MODAL: ДОБАВЛЕНИЕ ОПЕРАЦИИ -->
+    <!-- MODAL: ДОБАВЛЕНИЕ / РЕДАКТИРОВАНИЕ ОПЕРАЦИИ -->
     <div class="modal-overlay" id="modal-add-tx">
       <div class="modal-sheet">
         <div class="modal-drag-handle"></div>
         <div class="modal-header">
-          <div class="modal-title">Новая операция</div>
+          <div class="modal-title" id="modal-tx-title">Новая операция</div>
           <button class="btn-close-modal">✕</button>
         </div>
 
         <form id="form-add-tx">
+          <input type="hidden" id="tx-input-id" value="">
           <!-- iOS Segmented Type Switch -->
           <div class="type-segmented-switch">
             <div class="segmented-slider" id="segmented-slider"></div>
@@ -375,7 +376,7 @@
 
           <!-- Amount Input -->
           <div class="form-group">
-            <input type="number" id="tx-input-amount" class="form-input form-input-amount" placeholder="0" min="1" step="any" required autofocus>
+            <input type="number" id="tx-input-amount" class="form-input form-input-amount" placeholder="0" min="0.01" step="any" required autofocus>
             <!-- Quick sums for Belarus -->
             <div class="quick-amounts-strip">
               <span class="quick-amount-pill" data-amt="1">+1</span>
@@ -405,7 +406,8 @@
             <input type="date" id="tx-input-date" class="form-input">
           </div>
 
-          <button type="submit" class="btn-primary" style="margin-top: 10px;">Записать</button>
+          <button type="submit" class="btn-primary" id="btn-submit-tx" style="margin-top: 10px;">Записать</button>
+          <button type="button" class="btn-delete-modal-tx" id="btn-delete-modal-tx" style="display: none;">Удалить эту операцию</button>
         </form>
       </div>
     </div>

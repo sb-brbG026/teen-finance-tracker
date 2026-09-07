@@ -106,6 +106,32 @@ export async function addTransaction(transaction) {
   });
 }
 
+export async function updateTransaction(transaction) {
+  if (!transaction || !transaction.id) {
+    throw new Error('Transaction ID is required for update');
+  }
+  transaction.updatedAt = new Date().toISOString();
+
+  const store = await getStore('transactions', 'readwrite');
+  if (!store) {
+    let list = await getTransactions();
+    const idx = list.findIndex((t) => t.id === transaction.id);
+    if (idx !== -1) {
+      list[idx] = { ...list[idx], ...transaction };
+    } else {
+      list.unshift(transaction);
+    }
+    localStorage.setItem('tf_transactions', JSON.stringify(list));
+    return transaction;
+  }
+
+  return new Promise((resolve, reject) => {
+    const request = store.put(transaction);
+    request.onsuccess = () => resolve(transaction);
+    request.onerror = (e) => reject(e.target.error);
+  });
+}
+
 export async function deleteTransaction(id) {
   const store = await getStore('transactions', 'readwrite');
   if (!store) {

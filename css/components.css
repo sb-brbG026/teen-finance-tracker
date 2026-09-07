@@ -253,11 +253,16 @@
   padding: 14px 16px;
   border-bottom: 1px solid var(--border-color);
   min-height: 60px;
+  cursor: pointer;
   transition: background-color var(--transition-fast);
 }
 
 .tx-item:last-child {
   border-bottom: none;
+}
+
+.tx-item:hover {
+  background: var(--bg-surface-hover);
 }
 
 .tx-item:active {
@@ -342,6 +347,57 @@
 
 .tx-delete-btn:active {
   transform: scale(0.92);
+}
+
+.tx-edit-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  margin-left: 2px;
+  font-size: 14px;
+  opacity: 0.5;
+  transition: all var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tx-edit-btn:hover {
+  opacity: 1;
+  color: var(--primary);
+  background: var(--primary-light);
+}
+
+.tx-edit-btn:active {
+  transform: scale(0.92);
+}
+
+.btn-delete-modal-tx {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px 16px;
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid var(--danger-light);
+  border-radius: var(--radius-lg);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-delete-modal-tx:hover {
+  background: var(--danger-light);
+}
+
+.btn-delete-modal-tx:active {
+  transform: scale(0.98);
 }
 
 /* --- Goals / Piggy Bank ("Копилка на мечту") --- */
