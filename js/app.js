@@ -21,7 +21,7 @@ import {
 
 import { loadCategories, getCategoryMeta, createNewCategory, removeCategory } from './categories.js';
 import { loadGoals, addSavingsGoal, contributeToGoal, removeGoal, renderGoalCards } from './goals.js';
-import { calculateSummary, renderDonutChart, renderBarChart, renderBudgetBars } from './analytics.js';
+import { calculateSummary, renderDonutChart, renderBarChart, renderBudgetBars, renderCategoryHorizontalBars } from './analytics.js';
 import { generateSmartSummaryTip, askAdvisor, DEFAULT_MISTRAL_API_KEY } from './ai-advisor.js';
 import { GUIDES_DATA, QUIZ_QUESTIONS } from './guides.js';
 import {
@@ -43,6 +43,7 @@ const state = {
   goals: [],
   activeFilter: 'all',
   activePeriod: 'month',
+  analyticsChartView: 'donut',
   deferredInstallPrompt: null
 };
 
@@ -349,11 +350,20 @@ function renderAnalyticsTab() {
   if (expEl) expEl.textContent = formatMoney(summary.totalExpense);
   if (rateEl) rateEl.textContent = `${summary.savingsRate}%`;
 
-  // Круговая диаграмма Donut
+  // Круговая диаграмма Donut с интерактивной легендой
   const donutCanvas = document.getElementById('donut-chart-canvas');
+  const donutLegend = document.getElementById('donut-chart-legend');
   if (donutCanvas) {
-    renderDonutChart(donutCanvas, summary.expenseByCategory, state.categories);
+    renderDonutChart(donutCanvas, summary.expenseByCategory, state.categories, donutLegend);
   }
+
+  // Горизонтальные столбцы категорий (альтернативный вид для смартфона)
+  const horizontalBarsContainer = document.getElementById('category-horizontal-bars');
+  if (horizontalBarsContainer) {
+    renderCategoryHorizontalBars(horizontalBarsContainer, summary.expenseByCategory, state.categories, summary.totalExpense);
+  }
+
+  updateAnalyticsChartView();
 
   // Столбчатый график 7 дней
   const barCanvas = document.getElementById('bar-chart-canvas');
@@ -392,6 +402,20 @@ function renderAnalyticsTab() {
       catListContainer.appendChild(row);
     });
   }
+}
+
+function updateAnalyticsChartView() {
+  const isDonut = state.analyticsChartView !== 'bars';
+  const donutView = document.getElementById('analytics-donut-view');
+  const barsView = document.getElementById('analytics-bars-view');
+  const btnDonut = document.getElementById('btn-chart-view-donut');
+  const btnBars = document.getElementById('btn-chart-view-bars');
+
+  if (donutView) donutView.style.display = isDonut ? 'block' : 'none';
+  if (barsView) barsView.style.display = isDonut ? 'none' : 'block';
+
+  if (btnDonut) btnDonut.classList.toggle('active', isDonut);
+  if (btnBars) btnBars.classList.toggle('active', !isDonut);
 }
 
 // === ВКЛАДКА: ИИ-МЕНТОР ===
@@ -918,6 +942,19 @@ function initEventListeners() {
       vibrate(15);
       renderAnalyticsTab();
     });
+  });
+
+  // Переключение вида графика в аналитике (Круг / Полосы)
+  document.getElementById('btn-chart-view-donut')?.addEventListener('click', () => {
+    state.analyticsChartView = 'donut';
+    vibrate(10);
+    updateAnalyticsChartView();
+  });
+
+  document.getElementById('btn-chart-view-bars')?.addEventListener('click', () => {
+    state.analyticsChartView = 'bars';
+    vibrate(10);
+    updateAnalyticsChartView();
   });
 
   // Вопросы к ИИ-консультанту

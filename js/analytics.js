@@ -56,9 +56,9 @@ export function filterTransactionsByPeriod(transactions, period) {
 }
 
 /**
- * Рендерит современный Donut Chart (Круговая диаграмма) на Canvas
+ * Рендерит современный Donut Chart (Круговая диаграмма) на Canvas и легенду под ним
  */
-export function renderDonutChart(canvas, categoryData, categoriesList) {
+export function renderDonutChart(canvas, categoryData, categoriesList, legendContainer = null) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   const dpr = window.devicePixelRatio || 1;
@@ -75,12 +75,20 @@ export function renderDonutChart(canvas, categoryData, categoriesList) {
   const entries = Object.entries(categoryData).sort((a, b) => b[1] - a[1]);
   const total = entries.reduce((sum, [, val]) => sum + val, 0);
 
+  if (legendContainer) {
+    legendContainer.innerHTML = '';
+  }
+
   if (total === 0 || entries.length === 0) {
     ctx.fillStyle = '#64748b';
     ctx.font = '13px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('Нет данных о расходах за период', width / 2, height / 2);
+
+    if (legendContainer) {
+      legendContainer.innerHTML = '<div style="font-size: 12px; color: var(--text-muted); text-align: center; grid-column: 1 / -1; padding: 8px 0;">Нет расходов за выбранный период</div>';
+    }
     return;
   }
 
@@ -121,6 +129,77 @@ export function renderDonutChart(canvas, categoryData, categoriesList) {
   ctx.fillStyle = '#94a3b8';
   ctx.font = '11px sans-serif';
   ctx.fillText('Всего трат', centerX, centerY + 14);
+
+  // Рендер наглядной легенды под круговой диаграммой
+  if (legendContainer) {
+    entries.forEach(([catName, amount]) => {
+      const meta = getCategoryMeta(catName, categoriesList);
+      const percent = Math.round((amount / total) * 100);
+
+      const item = document.createElement('div');
+      item.className = 'donut-legend-item';
+      item.innerHTML = `
+        <div class="donut-legend-dot" style="background: ${meta.color || '#6366f1'};"></div>
+        <div class="donut-legend-info">
+          <div class="donut-legend-name" title="${catName}">${meta.icon || '📦'} ${catName}</div>
+          <div class="donut-legend-meta">
+            <span class="donut-legend-percent">${percent}%</span>
+            <span>${formatMoneyShort(amount)}</span>
+          </div>
+        </div>
+      `;
+      legendContainer.appendChild(item);
+    });
+  }
+}
+
+/**
+ * Рендерит горизонтальную столбчатую диаграмму (рейтинг расходов по категориям)
+ * Идеально для узких экранов смартфонов: названия не режутся, длина полосы наглядно сравнима
+ */
+export function renderCategoryHorizontalBars(container, categoryData, categoriesList, totalExpense) {
+  if (!container) return;
+  container.innerHTML = '';
+
+  const entries = Object.entries(categoryData).sort((a, b) => b[1] - a[1]);
+  const total = totalExpense || entries.reduce((sum, [, val]) => sum + val, 0);
+
+  if (total === 0 || entries.length === 0) {
+    container.innerHTML = `
+      <div style="font-size: 13px; color: var(--text-muted); text-align: center; padding: 24px 12px;">
+        Нет данных о расходах за выбранный период
+      </div>
+    `;
+    return;
+  }
+
+  // Находим максимум для относительного масштабирования полос
+  const maxVal = entries[0][1] || 1;
+
+  entries.forEach(([catName, amount]) => {
+    const meta = getCategoryMeta(catName, categoriesList);
+    const percent = Math.round((amount / total) * 100);
+    const barWidthPercent = Math.max(4, Math.round((amount / maxVal) * 100));
+
+    const item = document.createElement('div');
+    item.className = 'cat-bar-item';
+    item.innerHTML = `
+      <div class="cat-bar-header">
+        <div class="cat-bar-title">
+          <span>${meta.icon || '📦'}</span>
+          <span>${catName}</span>
+        </div>
+        <div class="cat-bar-values">
+          <span style="color: var(--text-primary); margin-right: 6px;">${formatMoneyShort(amount)}</span>
+          <span style="color: var(--text-muted); font-size: 11px;">(${percent}%)</span>
+        </div>
+      </div>
+      <div class="cat-bar-track">
+        <div class="cat-bar-fill" style="width: ${barWidthPercent}%; background: ${meta.color || '#6366f1'}; box-shadow: 0 0 10px ${meta.color || '#6366f1'}33;"></div>
+      </div>
+    `;
+    container.appendChild(item);
+  });
 }
 
 /**

@@ -167,11 +167,31 @@
         </div>
       </div>
 
-      <!-- Donut Chart Card -->
+      <!-- Distribution Chart Card (Donut with Legend OR Horizontal Bars) -->
       <div class="card">
-        <div class="section-title" style="margin-bottom: 12px;">🍩 Распределение расходов</div>
-        <div style="display: flex; justify-content: center;">
-          <canvas id="donut-chart-canvas" style="width: 100%; max-width: 320px; height: 200px;"></canvas>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <div class="section-title" style="margin-bottom: 0;">🍩 Распределение расходов</div>
+          <div class="chart-view-toggle">
+            <button class="chart-toggle-btn active" id="btn-chart-view-donut" title="Круговая с легендой">🍩 Круг</button>
+            <button class="chart-toggle-btn" id="btn-chart-view-bars" title="Столбчатая диаграмма">📊 Полосы</button>
+          </div>
+        </div>
+
+        <!-- Donut View with Legend -->
+        <div id="analytics-donut-view">
+          <div style="display: flex; justify-content: center;">
+            <canvas id="donut-chart-canvas" style="width: 100%; max-width: 320px; height: 200px;"></canvas>
+          </div>
+          <div id="donut-chart-legend" class="donut-legend-grid">
+            <!-- Легенда генерируется динамически -->
+          </div>
+        </div>
+
+        <!-- Horizontal Bars View (Рейтинг категорий) -->
+        <div id="analytics-bars-view" style="display: none;">
+          <div id="category-horizontal-bars">
+            <!-- Столбчатый рейтинг категорий -->
+          </div>
         </div>
       </div>
 
