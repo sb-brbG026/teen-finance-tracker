@@ -53,24 +53,29 @@ export async function generateSmartSummaryTip(transactions) {
   return `💡 **Совет дня:** Используй правило 48 часов перед любой крупной покупкой. Подожди два дня: если желание не пропало — покупай, если забыл — ты только что сохранил деньги!`;
 }
 
-export const DEFAULT_GEMINI_API_KEY = '';
+export const DEFAULT_MISTRAL_API_KEY = '';
 
 /**
  * Обработка запросов к ИИ-консультанту
  */
 export async function askAdvisor(userPrompt, transactions) {
-  const savedKey = await getSetting('gemini_api_key', '');
-  const apiKey = (savedKey && savedKey.trim().length > 0) ? savedKey.trim() : DEFAULT_GEMINI_API_KEY;
+  const mistralKey = await getSetting('mistral_api_key', '');
+  const legacyKey = await getSetting('gemini_api_key', '');
+  const apiKey = (mistralKey && mistralKey.trim().length > 0) ? mistralKey.trim() : (legacyKey ? legacyKey.trim() : DEFAULT_MISTRAL_API_KEY);
   const summary = calculateSummary(transactions, 'month');
   const goals = await getGoals();
 
-  // Если есть Gemini API ключ, пробуем отправить онлайн-запрос
+  // Если есть Mistral API ключ, отправляем онлайн-запрос
   if (apiKey && apiKey.length > 10) {
     try {
-      const response = await callGeminiAPI(apiKey, userPrompt, summary, goals);
+      const response = await callMistralAPI(apiKey, userPrompt, summary, goals);
       return response;
     } catch (err) {
-      console.warn('Ошибка вызова Gemini API, используем автономного советника:', err);
+      console.warn('Ошибка вызова Mistral API:', err);
+      if (err.message && err.message.includes('Invalid API Key')) {
+        const offlineReply = generateOfflineAdvisorResponse(userPrompt, summary, goals);
+        return `⚠️ **Mistral AI:** *Указан неверный API-ключ. Проверь ключ в Настройках (получить: console.mistral.ai).* \n\n🤖 **Ответ ФинМентора (автономный режим):**\n\n${offlineReply}`;
+      }
     }
   }
 
@@ -134,10 +139,11 @@ function generateOfflineAdvisorResponse(prompt, summary, goals) {
 }
 
 /**
- * Вызов официального Gemini API (v1beta)
+ * Вызов официального Mistral AI API
+ * Модель: mistral-small-latest (быстрая, умная, без гео-блокировок в Беларуси)
  */
-async function callGeminiAPI(apiKey, userPrompt, summary, goals) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
+async function callMistralAPI(apiKey, userPrompt, summary, goals) {
+  const url = 'https://api.mistral.ai/v1/chat/completions';
 
   const systemInstruction = `Ты — Фин, дружелюбный, крутой и современный финансовый ментор для подростков (12-18 лет). 
 Общайся уважительно, на "ты", мотивируй, используй эмодзи, избегай скучной банковской терминологии.
@@ -150,27 +156,44 @@ async function callGeminiAPI(apiKey, userPrompt, summary, goals) {
 Отвечай кратко (2-4 абзаца), практично и с юмором. Не используй значков валют.`;
 
   const payload = {
-    contents: [
+    model: 'mistral-small-latest',
+    messages: [
       {
-        parts: [
-          { text: systemInstruction },
-          { text: `Вопрос подростка: ${userPrompt}` }
-        ]
+        role: 'system',
+        content: systemInstruction
+      },
+      {
+        role: 'user',
+        content: userPrompt
       }
-    ]
+    ],
+    temperature: 0.7,
+    max_tokens: 800
   };
 
   const resp = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey.trim()}`
+    },
     body: JSON.stringify(payload)
   });
 
   if (!resp.ok) {
-    throw new Error(`Gemini API returned status ${resp.status}`);
+    let errorDetail = `HTTP ${resp.status}`;
+    try {
+      const errJson = await resp.json();
+      if (errJson.detail) {
+        errorDetail = typeof errJson.detail === 'string' ? errJson.detail : JSON.stringify(errJson.detail);
+      } else if (errJson.message) {
+        errorDetail = errJson.message;
+      }
+    } catch (_) {}
+    throw new Error(`Mistral API: ${errorDetail}`);
   }
 
   const data = await resp.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  return text || 'Не удалось получить ответ от ИИ, попробуй позже.';
+  const text = data.choices?.[0]?.message?.content;
+  return text ? text.trim() : 'Не удалось получить ответ от ИИ, попробуй позже.';
 }

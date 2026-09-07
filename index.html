@@ -88,7 +88,7 @@
       </section>
 
       <!-- AI Advisor Card Preview -->
-      <section class="ai-hero-card" onclick="window.teenAppSwitchTab('advisor')" style="cursor: pointer;">
+      <section class="ai-hero-card" id="home-advisor-card" onclick="window.teenAppSwitchTab('advisor')" style="cursor: pointer;">
         <div class="ai-header">
           <div class="ai-avatar">🤖</div>
           <div class="ai-title-wrap">
@@ -293,16 +293,16 @@
         </div>
       </div>
 
-      <!-- Gemini AI API Settings -->
+      <!-- Mistral AI API Settings -->
       <div class="card">
-        <div class="section-title" style="margin-bottom: 8px;">🧠 Настройки ИИ (Опционально)</div>
+        <div class="section-title" style="margin-bottom: 8px;">🤖 ИИ-Ментор: Mistral AI</div>
         <p class="text-xs text-secondary" style="margin-bottom: 10px;">
-          По умолчанию работает умный встроенный офлайн-ментор. Если у тебя есть свой Google Gemini API ключ, введи его для бесконечных живых ответов:
+          Работает в Беларуси без VPN. Получи бесплатный ключ на <a href="https://console.mistral.ai/api-keys" target="_blank" rel="noopener" style="color: var(--primary); text-decoration: underline; font-weight: 600;">console.mistral.ai</a> и вставь его сюда:
         </p>
         <div class="form-group">
-          <input type="password" id="gemini-key-input" class="form-input" placeholder="Введи Gemini API Key (AIzaSy...)">
+          <input type="password" id="mistral-key-input" class="form-input" placeholder="Введи Mistral API Key">
         </div>
-        <button class="btn-secondary" id="btn-save-gemini-key" style="margin-top: 0;">Сохранить ключ</button>
+        <button class="btn-secondary" id="btn-save-mistral-key" style="margin-top: 0;">Сохранить ключ Mistral</button>
       </div>
 
       <!-- Backup & Data Card -->

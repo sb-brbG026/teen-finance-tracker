@@ -22,7 +22,7 @@ import {
 import { loadCategories, getCategoryMeta, createNewCategory, removeCategory } from './categories.js';
 import { loadGoals, addSavingsGoal, contributeToGoal, removeGoal, renderGoalCards } from './goals.js';
 import { calculateSummary, renderDonutChart, renderBarChart, renderBudgetBars } from './analytics.js';
-import { generateSmartSummaryTip, askAdvisor, DEFAULT_GEMINI_API_KEY } from './ai-advisor.js';
+import { generateSmartSummaryTip, askAdvisor, DEFAULT_MISTRAL_API_KEY } from './ai-advisor.js';
 import { GUIDES_DATA, QUIZ_QUESTIONS } from './guides.js';
 import {
   getSheetsWebhookUrl,
@@ -157,6 +157,10 @@ export function switchTab(tabName) {
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
+// Глобальный доступ для вызовов из HTML
+window.switchTab = switchTab;
+window.teenAppSwitchTab = switchTab;
 
 // === ОБНОВЛЕНИЕ ДАННЫХ ===
 
@@ -437,10 +441,10 @@ async function renderSettingsTab() {
     urlInput.value = await getSheetsWebhookUrl();
   }
 
-  const geminiInput = document.getElementById('gemini-key-input');
-  if (geminiInput) {
-    const savedKey = await getSetting('gemini_api_key', '');
-    geminiInput.value = savedKey || DEFAULT_GEMINI_API_KEY;
+  const mistralInput = document.getElementById('mistral-key-input') || document.getElementById('gemini-key-input');
+  if (mistralInput) {
+    const savedKey = (await getSetting('mistral_api_key', '')) || (await getSetting('gemini_api_key', ''));
+    mistralInput.value = savedKey || DEFAULT_MISTRAL_API_KEY;
   }
 
   // Список категорий для настройки
@@ -927,6 +931,22 @@ function initEventListeners() {
     await handleAskAdvisor(q);
   });
 
+  document.getElementById('advisor-custom-input')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      document.getElementById('btn-send-advisor')?.click();
+    }
+  });
+
+  // Переход в ИИ-ментор и Настройки по клику
+  document.getElementById('home-advisor-card')?.addEventListener('click', () => {
+    switchTab('advisor');
+  });
+
+  document.getElementById('header-settings-btn')?.addEventListener('click', () => {
+    switchTab('settings');
+  });
+
   // Создание новой цели
   document.getElementById('btn-open-create-goal')?.addEventListener('click', () => {
     const modal = document.getElementById('modal-create-goal');
@@ -995,10 +1015,12 @@ function initEventListeners() {
     }
   });
 
-  document.getElementById('btn-save-gemini-key')?.addEventListener('click', async () => {
-    const key = document.getElementById('gemini-key-input')?.value;
-    await setSetting('gemini_api_key', (key || '').trim());
-    showToast('Gemini API ключ сохранен', 'success');
+  const saveMistralBtn = document.getElementById('btn-save-mistral-key') || document.getElementById('btn-save-gemini-key');
+  saveMistralBtn?.addEventListener('click', async () => {
+    const input = document.getElementById('mistral-key-input') || document.getElementById('gemini-key-input');
+    const key = input?.value;
+    await setSetting('mistral_api_key', (key || '').trim());
+    showToast('Ключ Mistral AI сохранен! 🤖', 'success');
   });
 
   // Кнопка показа скрипта для копирования
