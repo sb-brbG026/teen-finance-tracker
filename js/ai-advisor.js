@@ -60,26 +60,33 @@ export const DEFAULT_MISTRAL_API_KEY = '';
  */
 export async function askAdvisor(userPrompt, transactions) {
   const mistralKey = await getSetting('mistral_api_key', '');
-  const legacyKey = await getSetting('gemini_api_key', '');
-  const apiKey = (mistralKey && mistralKey.trim().length > 0) ? mistralKey.trim() : (legacyKey ? legacyKey.trim() : DEFAULT_MISTRAL_API_KEY);
+  const apiKey = (mistralKey && mistralKey.trim().length > 0) ? mistralKey.trim() : DEFAULT_MISTRAL_API_KEY;
   const summary = calculateSummary(transactions, 'month');
   const goals = await getGoals();
 
-  // Если есть Mistral API ключ, отправляем онлайн-запрос
-  if (apiKey && apiKey.length > 10) {
+  // Если задан Mistral API ключ, отправляем прямой онлайн-запрос
+  if (apiKey && apiKey.length > 5) {
     try {
       const response = await callMistralAPI(apiKey, userPrompt, summary, goals);
       return response;
     } catch (err) {
       console.warn('Ошибка вызова Mistral API:', err);
-      if (err.message && err.message.includes('Invalid API Key')) {
-        const offlineReply = generateOfflineAdvisorResponse(userPrompt, summary, goals);
-        return `⚠️ **Mistral AI:** *Указан неверный API-ключ. Проверь ключ в Настройках (получить: console.mistral.ai).* \n\n🤖 **Ответ ФинМентора (автономный режим):**\n\n${offlineReply}`;
+      const offlineReply = generateOfflineAdvisorResponse(userPrompt, summary, goals);
+
+      let errorReason = err.message || 'Ошибка соединения';
+      if (err.name === 'AbortError') {
+        errorReason = 'Таймаут соединения (15 сек). Сервер api.mistral.ai не отвечает без VPN.';
+      } else if (err.message && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
+        errorReason = 'Браузеру не удалось связаться с api.mistral.ai (заблокировано провайдером/Cloudflare без VPN).';
+      } else if (err.message && err.message.includes('Invalid API Key')) {
+        errorReason = 'Указан неверный API-ключ Mistral. Проверь его в Настройках.';
       }
+
+      return `⚠️ **Mistral AI:** *${errorReason}*\n\n🤖 **Ответ ФинМентора (офлайн-режим):**\n\n${offlineReply}`;
     }
   }
 
-  // Иначе используем умный встроенный офлайн-движок с подростковой спецификой
+  // Если ключ не указан, используем автономный офлайн-движок с подростковой спецификой
   return generateOfflineAdvisorResponse(userPrompt, summary, goals);
 }
 
@@ -171,29 +178,37 @@ async function callMistralAPI(apiKey, userPrompt, summary, goals) {
     max_tokens: 800
   };
 
-  const resp = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey.trim()}`
-    },
-    body: JSON.stringify(payload)
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-  if (!resp.ok) {
-    let errorDetail = `HTTP ${resp.status}`;
-    try {
-      const errJson = await resp.json();
-      if (errJson.detail) {
-        errorDetail = typeof errJson.detail === 'string' ? errJson.detail : JSON.stringify(errJson.detail);
-      } else if (errJson.message) {
-        errorDetail = errJson.message;
-      }
-    } catch (_) {}
-    throw new Error(`Mistral API: ${errorDetail}`);
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey.trim()}`
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+
+    if (!resp.ok) {
+      let errorDetail = `HTTP ${resp.status}`;
+      try {
+        const errJson = await resp.json();
+        if (errJson.detail) {
+          errorDetail = typeof errJson.detail === 'string' ? errJson.detail : JSON.stringify(errJson.detail);
+        } else if (errJson.message) {
+          errorDetail = errJson.message;
+        }
+      } catch (_) {}
+      throw new Error(`Mistral API: ${errorDetail}`);
+    }
+
+    const data = await resp.json();
+    const text = data.choices?.[0]?.message?.content;
+    return text ? text.trim() : 'Не удалось получить ответ от ИИ, попробуй позже.';
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  const data = await resp.json();
-  const text = data.choices?.[0]?.message?.content;
-  return text ? text.trim() : 'Не удалось получить ответ от ИИ, попробуй позже.';
 }
