@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4F46E5"/>
+      <stop offset="50%" stop-color="#7C3AED"/>
+      <stop offset="100%" stop-color="#EC4899"/>
+    </linearGradient>
+    <linearGradient id="coinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE047"/>
+      <stop offset="100%" stop-color="#EAB308"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#7C3AED" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+  <!-- Background with rounded corners -->
+  <rect width="192" height="192" rx="42" fill="url(#bgGrad)"/>
+  
+  <!-- Subtle inner card sheen -->
+  <circle cx="96" cy="96" r="68" fill="#ffffff" fill-opacity="0.1"/>
+  
+  <!-- Central Icon: Modern stylized Wallet & Rocket / Spark -->
+  <g filter="url(#glow)">
+    <!-- Main glowing circle -->
+    <circle cx="96" cy="96" r="52" fill="#0F172A" stroke="#FFFFFF" stroke-opacity="0.2" stroke-width="2"/>
+    
+    <!-- Neon Lightning / Growth Arrow -->
+    <path d="M102 62L82 96H98L90 130L116 92H100L106 62Z" fill="url(#coinGrad)"/>
+  </g>
+</svg>

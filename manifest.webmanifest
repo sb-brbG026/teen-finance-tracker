@@ -1,0 +1,46 @@
+{
+  "name": "TeenFlow — ФинТрек для подростков",
+  "short_name": "TeenFlow",
+  "description": "Стильный и удобный трекер личных финансов, накоплений и привычек для подростков",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#6366f1",
+  "lang": "ru",
+  "categories": ["finance", "productivity", "education"],
+  "icons": [
+    {
+      "src": "./assets/icons/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./assets/icons/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Добавить расход",
+      "short_name": "Расход",
+      "url": "./index.html?action=new_expense",
+      "icons": [{ "src": "./assets/icons/icon-192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Добавить доход",
+      "short_name": "Доход",
+      "url": "./index.html?action=new_income",
+      "icons": [{ "src": "./assets/icons/icon-192.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Совет ИИ",
+      "short_name": "ИИ-Совет",
+      "url": "./index.html?tab=ai",
+      "icons": [{ "src": "./assets/icons/icon-192.svg", "sizes": "192x192" }]
+    }
+  ]
+}

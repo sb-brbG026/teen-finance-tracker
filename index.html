@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>TeenFlow — ФинТрек для подростков</title>
+  
+  <!-- PWA Meta -->
+  <link rel="manifest" href="./manifest.webmanifest">
+  <meta name="theme-color" content="#6366f1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-icon" href="./assets/icons/icon-192.svg">
+  <link rel="icon" type="image/svg+xml" href="./assets/icons/icon-192.svg">
+
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="./css/main.css">
+  <link rel="stylesheet" href="./css/components.css">
+  <link rel="stylesheet" href="./css/animations.css">
+</head>
+<body>
+
+  <!-- App Wrapper -->
+  <div class="app-container">
+
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon">⚡</div>
+        <div class="brand-name">TeenFlow</div>
+      </div>
+      <div class="header-actions">
+        <button class="btn-icon" id="theme-toggle-btn" title="Сменить тему" aria-label="Сменить тему">☀️</button>
+        <button class="btn-icon" id="header-settings-btn" title="Настройки" onclick="window.teenAppSwitchTab('settings')" aria-label="Настройки">⚙️</button>
+      </div>
+    </header>
+
+    <!-- PWA Install Banner -->
+    <div id="pwa-install-banner" style="display: none; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; padding: 10px 16px; align-items: center; justify-content: space-between; font-size: 13px;">
+      <span>📲 Установи TeenFlow на экран смартфона!</span>
+      <button id="btn-pwa-install" style="background: #fff; color: #4f46e5; border: none; padding: 6px 12px; border-radius: 999px; font-weight: 700; cursor: pointer;">
+        Установить
+      </button>
+    </div>
+
+    <!-- MAIN VIEWS (TABS) -->
+
+    <!-- TAB 1: ГЛАВНАЯ (ОБЗОР) -->
+    <main class="tab-content active" id="tab-home">
+      <!-- Hero Balance Card -->
+      <section class="balance-card">
+        <div class="balance-label">
+          <span>Твой баланс</span>
+          <span style="font-size: 10px; padding: 2px 6px; border-radius: 6px; background: rgba(255,255,255,0.2);">Текущий</span>
+        </div>
+        <div class="balance-amount">
+          <span id="hero-balance-val">0</span>
+        </div>
+        <div class="balance-stats">
+          <div class="stat-item">
+            <div class="stat-icon" style="color: #4ade80;">↓</div>
+            <div class="stat-info">
+              <div class="stat-title">Доходы за месяц</div>
+              <div class="stat-value" id="hero-income-val">+0</div>
+            </div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-icon" style="color: #f87171;">↑</div>
+            <div class="stat-info">
+              <div class="stat-title">Траты за месяц</div>
+              <div class="stat-value" id="hero-expense-val">-0</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Quick Action Strip -->
+      <section class="quick-actions-strip">
+        <button class="btn-quick-action btn-income" id="quick-add-income">
+          <span>➕</span> Доход
+        </button>
+        <button class="btn-quick-action btn-expense" id="quick-add-expense">
+          <span>➖</span> Расход
+        </button>
+        <button class="btn-quick-action" id="quick-sync-btn" title="Синхронизировать с Google Таблицей">
+          <span>🔄</span> Синхр.
+        </button>
+      </section>
+
+      <!-- AI Advisor Card Preview -->
+      <section class="ai-hero-card" onclick="window.teenAppSwitchTab('advisor')" style="cursor: pointer;">
+        <div class="ai-header">
+          <div class="ai-avatar">🤖</div>
+          <div class="ai-title-wrap">
+            <h3>ФинМентор <span class="ai-status-badge">Совет дня</span></h3>
+          </div>
+        </div>
+        <div class="ai-bubble" id="home-advisor-tip" style="margin-bottom: 0;">
+          Загрузка персонального финансового совета...
+        </div>
+      </section>
+
+      <!-- Savings Goals Section -->
+      <section>
+        <div class="section-header">
+          <div class="section-title">🎯 Копилка на мечту</div>
+          <button class="section-link" id="btn-open-create-goal">+ Новая цель</button>
+        </div>
+        <div id="home-goals-container">
+          <!-- Рендерятся карточки целей -->
+        </div>
+      </section>
+
+      <!-- Recent Transactions Section -->
+      <section>
+        <div class="section-header">
+          <div class="section-title">🕒 Последние операции</div>
+          <button class="section-link" onclick="window.teenAppSwitchTab('transactions')">Все (история)</button>
+        </div>
+        <div id="home-recent-txs" class="tx-list">
+          <!-- Рендерится список операций -->
+        </div>
+      </section>
+    </main>
+
+    <!-- TAB 2: ОПЕРАЦИИ (ИСТОРИЯ) -->
+    <section class="tab-content" id="tab-transactions">
+      <h1 class="ios-large-title">Операции</h1>
+      <div style="margin-bottom: 12px;">
+        <input type="text" id="tx-search-input" class="form-input" placeholder="🔍 Поиск по названию или категории...">
+      </div>
+
+      <div class="chips-container" id="tx-filters">
+        <button class="chip active" data-filter="all">Все операции</button>
+        <button class="chip" data-filter="expense">Только расходы</button>
+        <button class="chip" data-filter="income">Только доходы</button>
+      </div>
+
+      <div id="tx-full-list" class="tx-list">
+        <!-- Полный список транзакций (iOS Inset Grouped) -->
+      </div>
+    </section>
+
+    <!-- TAB 3: АНАЛИТИКА -->
+    <section class="tab-content" id="tab-analytics">
+      <h1 class="ios-large-title">Аналитика</h1>
+      <!-- Period Selector -->
+      <div class="chips-container" id="analytics-period-chips">
+        <button class="chip" data-period="week">За 7 дней</button>
+        <button class="chip active" data-period="month">За месяц</button>
+        <button class="chip" data-period="all">Все время</button>
+      </div>
+
+      <!-- Quick Metrics Cards -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 16px;">
+        <div class="card" style="padding: 12px 10px; text-align: center; margin-bottom: 0;">
+          <div class="text-xs text-muted">Доходы</div>
+          <div class="text-sm font-bold text-success" id="analytics-income-total">0</div>
+        </div>
+        <div class="card" style="padding: 12px 10px; text-align: center; margin-bottom: 0;">
+          <div class="text-xs text-muted">Расходы</div>
+          <div class="text-sm font-bold text-danger" id="analytics-expense-total">0</div>
+        </div>
+        <div class="card" style="padding: 12px 10px; text-align: center; margin-bottom: 0;">
+          <div class="text-xs text-muted">Сбережения</div>
+          <div class="text-sm font-bold text-primary" id="analytics-savings-rate">0%</div>
+        </div>
+      </div>
+
+      <!-- Donut Chart Card -->
+      <div class="card">
+        <div class="section-title" style="margin-bottom: 12px;">🍩 Распределение расходов</div>
+        <div style="display: flex; justify-content: center;">
+          <canvas id="donut-chart-canvas" style="width: 100%; max-width: 320px; height: 200px;"></canvas>
+        </div>
+      </div>
+
+      <!-- Dynamics Bar Chart Card -->
+      <div class="card">
+        <div class="section-title" style="margin-bottom: 12px;">📊 Динамика трат по дням</div>
+        <div style="display: flex; justify-content: center;">
+          <canvas id="bar-chart-canvas" style="width: 100%; max-width: 360px; height: 160px;"></canvas>
+        </div>
+      </div>
+
+      <!-- Budget Limits Card -->
+      <div class="card">
+        <div class="section-title" style="margin-bottom: 12px;">🎯 Контроль лимитов бюджета</div>
+        <div id="budget-bars-container">
+          <!-- Рендер шкал бюджетов -->
+        </div>
+      </div>
+
+      <!-- Categories breakdown list -->
+      <div class="section-title" style="margin: 16px 0 10px;">📋 Траты по статьям</div>
+      <div id="analytics-cat-breakdown"></div>
+    </section>
+
+    <!-- TAB 4: ИИ-МЕНТОР ("ФИН") -->
+    <section class="tab-content" id="tab-advisor">
+      <h1 class="ios-large-title">ИИ-Ментор</h1>
+      <div class="ai-hero-card">
+        <div class="ai-header">
+          <div class="ai-avatar">🤖</div>
+          <div class="ai-title-wrap">
+            <h3>Фин — твой ИИ-наставник</h3>
+            <span class="ai-status-badge">Всегда онлайн</span>
+          </div>
+        </div>
+        <div class="ai-bubble" id="advisor-insights-box">
+          Анализирую твои расходы и доходы...
+        </div>
+      </div>
+
+      <div class="section-title" style="margin-bottom: 10px;">💡 Быстрые вопросы к ИИ:</div>
+      <div class="ai-prompt-chips" style="margin-bottom: 16px;">
+        <button class="ai-prompt-btn">Как быстрее накопить на цель?</button>
+        <button class="ai-prompt-btn">Где я теряю больше всего денег?</button>
+        <button class="ai-prompt-btn">Как распределить деньги по 50/30/20?</button>
+        <button class="ai-prompt-btn">Стоит ли покупать вещь прямо сейчас?</button>
+        <button class="ai-prompt-btn">Где заработать первые деньги?</button>
+      </div>
+
+      <!-- Chat History -->
+      <div id="advisor-chat-messages" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px;">
+        <!-- Динамические сообщения -->
+      </div>
+
+      <!-- Custom Prompt Input -->
+      <div style="display: flex; gap: 8px;">
+        <input type="text" id="advisor-custom-input" class="form-input" placeholder="Задай любой вопрос про деньги...">
+        <button class="btn-primary" id="btn-send-advisor" style="width: auto; padding: 0 18px;">
+          ➤
+        </button>
+      </div>
+    </section>
+
+    <!-- TAB 5: ШКОЛА ДЕНЕГ (ГАЙДЫ) -->
+    <section class="tab-content" id="tab-guides">
+      <h1 class="ios-large-title">Школа денег</h1>
+      <!-- Quiz CTA Card -->
+      <div class="card" style="background: linear-gradient(135deg, #1e1b4b, #3b0764); border-color: rgba(168, 85, 247, 0.4); margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <h3 style="font-size: 16px; font-weight: 800; color: #fff; margin-bottom: 4px;">🏆 Тест по финграмотности</h3>
+            <p style="font-size: 12px; color: #d8b4fe;">Проверь себя, ответь на 4 вопроса и получи ранг!</p>
+          </div>
+          <button class="btn-primary" id="btn-start-quiz" style="width: auto; padding: 8px 14px; font-size: 13px;">
+            Пройти
+          </button>
+        </div>
+      </div>
+
+      <div class="section-title" style="margin-bottom: 12px;">📚 Полезные статьи для подростков</div>
+      <div id="guides-list-container">
+        <!-- Список гайдов -->
+      </div>
+    </section>
+
+    <!-- TAB 6: НАСТРОЙКИ И СИНХРОНИЗАЦИЯ -->
+    <section class="tab-content" id="tab-settings">
+      <h1 class="ios-large-title">Настройки</h1>
+      <!-- Google Sheets Sync Card -->
+      <div class="card">
+        <div class="section-title" style="margin-bottom: 8px;">📊 Синхронизация с Google Таблицей</div>
+        <p class="text-xs text-secondary" style="margin-bottom: 12px;">
+          Все твои доходы и расходы могут автоматически дублироваться в твою личную Google Таблицу.
+        </p>
+
+        <div class="form-group">
+          <label class="form-label" for="sheets-url-input">URL веб-приложения Google Apps Script:</label>
+          <input type="url" id="sheets-url-input" class="form-input" placeholder="https://script.google.com/macros/s/.../exec">
+        </div>
+
+        <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+          <button class="btn-primary" id="btn-save-sheets-url" style="flex: 1;">Сохранить URL</button>
+          <button class="btn-secondary" id="btn-test-sheets" style="flex: 1; margin-top: 0;">Проверить связь</button>
+        </div>
+
+        <button class="btn-secondary" id="btn-view-gas-script">
+          📄 Инструкция и код скрипта для Таблицы (2 мин)
+        </button>
+      </div>
+
+      <!-- Categories Management Card -->
+      <div class="card">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+          <div class="section-title" style="margin: 0;">🏷️ Категории и Лимиты</div>
+          <button class="btn-icon" id="btn-open-create-category" title="Добавить категорию" style="width: 32px; height: 32px;">➕</button>
+        </div>
+        <div id="categories-settings-list" class="tx-list">
+          <!-- Список категорий -->
+        </div>
+      </div>
+
+      <!-- Gemini AI API Settings -->
+      <div class="card">
+        <div class="section-title" style="margin-bottom: 8px;">🧠 Настройки ИИ (Опционально)</div>
+        <p class="text-xs text-secondary" style="margin-bottom: 10px;">
+          По умолчанию работает умный встроенный офлайн-ментор. Если у тебя есть свой Google Gemini API ключ, введи его для бесконечных живых ответов:
+        </p>
+        <div class="form-group">
+          <input type="password" id="gemini-key-input" class="form-input" placeholder="Введи Gemini API Key (AIzaSy...)">
+        </div>
+        <button class="btn-secondary" id="btn-save-gemini-key" style="margin-top: 0;">Сохранить ключ</button>
+      </div>
+
+      <!-- Backup & Data Card -->
+      <div class="card">
+        <div class="section-title" style="margin-bottom: 10px;">💾 Резервная копия и Экспорт</div>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <button class="btn-secondary" id="btn-export-csv" style="margin-top: 0;">
+            📥 Экспорт в CSV (Excel / Таблицы)
+          </button>
+          <button class="btn-secondary" id="btn-export-json" style="margin-top: 0;">
+            📦 Полный бэкап (JSON)
+          </button>
+          <label class="btn-secondary" style="margin-top: 0; text-align: center; cursor: pointer;">
+            📤 Импорт из CSV файла
+            <input type="file" id="csv-file-input" accept=".csv" style="display: none;">
+          </label>
+          <button class="btn-secondary" id="btn-seed-demo" style="margin-top: 6px; border-color: rgba(99, 102, 241, 0.4); color: var(--primary);">
+            🪄 Заполнить демо-данными (для теста)
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- BOTTOM NAVIGATION BAR -->
+    <nav class="bottom-nav">
+      <button class="nav-item active" data-tab="home" aria-label="Обзор">
+        <span class="icon">🏠</span>
+        <span>Обзор</span>
+      </button>
+
+      <button class="nav-item" data-tab="transactions" aria-label="Операции">
+        <span class="icon">📋</span>
+        <span>Операции</span>
+      </button>
+
+      <!-- Center Floating Plus Button -->
+      <div class="nav-item-add">
+        <button class="btn-add-main" id="btn-add-main" title="Добавить операцию" aria-label="Добавить операцию">
+          +
+        </button>
+      </div>
+
+      <button class="nav-item" data-tab="analytics" aria-label="Аналитика">
+        <span class="icon">📊</span>
+        <span>Аналитика</span>
+      </button>
+
+      <button class="nav-item" data-tab="guides" aria-label="Школа денег">
+        <span class="icon">🎓</span>
+        <span>Школа</span>
+      </button>
+    </nav>
+
+    <!-- MODAL: ДОБАВЛЕНИЕ ОПЕРАЦИИ -->
+    <div class="modal-overlay" id="modal-add-tx">
+      <div class="modal-sheet">
+        <div class="modal-drag-handle"></div>
+        <div class="modal-header">
+          <div class="modal-title">Новая операция</div>
+          <button class="btn-close-modal">✕</button>
+        </div>
+
+        <form id="form-add-tx">
+          <!-- iOS Segmented Type Switch -->
+          <div class="type-segmented-switch">
+            <div class="segmented-slider" id="segmented-slider"></div>
+            <button type="button" class="switch-btn active" id="btn-type-expense">Расход</button>
+            <button type="button" class="switch-btn" id="btn-type-income">Доход</button>
+          </div>
+
+          <!-- Amount Input -->
+          <div class="form-group">
+            <input type="number" id="tx-input-amount" class="form-input form-input-amount" placeholder="0" min="1" step="any" required autofocus>
+            <!-- Quick sums for Belarus -->
+            <div class="quick-amounts-strip">
+              <span class="quick-amount-pill" data-amt="1">+1</span>
+              <span class="quick-amount-pill" data-amt="2">+2</span>
+              <span class="quick-amount-pill" data-amt="5">+5</span>
+              <span class="quick-amount-pill" data-amt="10">+10</span>
+              <span class="quick-amount-pill" data-amt="50">+50</span>
+            </div>
+          </div>
+
+          <!-- Category Selector -->
+          <div class="form-group">
+            <label class="form-label">Выбери категорию:</label>
+            <div class="category-grid" id="tx-category-grid"></div>
+          </div>
+
+          <!-- Title / Note / Date -->
+          <div class="form-group">
+            <input type="text" id="tx-input-title" class="form-input" placeholder="Название (например: Бургер Кинг, Додо)">
+          </div>
+
+          <div class="form-group">
+            <input type="text" id="tx-input-note" class="form-input" placeholder="Заметка (опционально)">
+          </div>
+
+          <div class="form-group">
+            <input type="date" id="tx-input-date" class="form-input">
+          </div>
+
+          <button type="submit" class="btn-primary" style="margin-top: 10px;">Записать</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL: СОЗДАНИЕ ЦЕЛИ ("КОПИЛКА") -->
+    <div class="modal-overlay" id="modal-create-goal">
+      <div class="modal-sheet">
+        <div class="modal-drag-handle"></div>
+        <div class="modal-header">
+          <div class="modal-title">🎯 Новая цель накопления</div>
+          <button class="btn-close-modal">✕</button>
+        </div>
+        <form id="form-create-goal">
+          <div class="form-group">
+            <label class="form-label">На что копим?</label>
+            <input type="text" id="goal-name-input" class="form-input" placeholder="Например: AirPods, PlayStation 5, Кроссовки" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Сколько нужно накопить?</label>
+            <input type="number" id="goal-target-input" class="form-input" placeholder="100" min="1" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Иконка (эмодзи):</label>
+            <input type="text" id="goal-icon-input" class="form-input" value="🎧" maxlength="4">
+          </div>
+          <button type="submit" class="btn-primary">Создать цель</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL: ПОПОЛНЕНИЕ ЦЕЛИ -->
+    <div class="modal-overlay" id="modal-goal-money">
+      <div class="modal-sheet">
+        <div class="modal-drag-handle"></div>
+        <div class="modal-header">
+          <div class="modal-title" id="goal-money-title">Пополнить копилку</div>
+          <button class="btn-close-modal">✕</button>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Сколько отложить в копилку?</label>
+          <input type="number" id="goal-money-amount" class="form-input form-input-amount" placeholder="10" min="0.1" step="any">
+        </div>
+        <button class="btn-primary" id="btn-submit-goal-money">Отложить в копилку 🐷</button>
+      </div>
+    </div>
+
+    <!-- MODAL: СОЗДАНИЕ КАТЕГОРИИ -->
+    <div class="modal-overlay" id="modal-create-category">
+      <div class="modal-sheet">
+        <div class="modal-drag-handle"></div>
+        <div class="modal-header">
+          <div class="modal-title">🏷️ Новая категория</div>
+          <button class="btn-close-modal">✕</button>
+        </div>
+        <form id="form-create-category">
+          <div class="form-group">
+            <label class="form-label">Название категории:</label>
+            <input type="text" id="cat-name-input" class="form-input" placeholder="Например: Самокаты, Киберспорт" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Тип:</label>
+            <select id="cat-type-select" class="form-select">
+              <option value="expense">Расход</option>
+              <option value="income">Доход</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Иконка (эмодзи):</label>
+            <input type="text" id="cat-icon-input" class="form-input" value="🛴" maxlength="4">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Цвет метки:</label>
+            <input type="color" id="cat-color-input" class="form-input" value="#6366f1" style="height: 44px; padding: 4px;">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Месячный лимит трат (0 если без лимита):</label>
+            <input type="number" id="cat-budget-input" class="form-input" placeholder="0" min="0">
+          </div>
+          <button type="submit" class="btn-primary">Сохранить категорию</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- MODAL: ПРОСМОТР СТАТЬИ ГАЙДА -->
+    <div class="modal-overlay" id="modal-guide-detail">
+      <div class="modal-sheet">
+        <div class="modal-drag-handle"></div>
+        <div class="modal-header">
+          <div class="modal-title" id="guide-detail-title">Гайд</div>
+          <button class="btn-close-modal">✕</button>
+        </div>
+        <div id="guide-detail-body" style="font-size: 14px; line-height: 1.6; color: var(--text-primary);"></div>
+        <button class="btn-secondary btn-close-modal" style="margin-top: 20px;">Понятно, спасибо!</button>
+      </div>
+    </div>
+
+    <!-- MODAL: КВИЗ ФИНГРАМОТНОСТИ -->
+    <div class="modal-overlay" id="modal-quiz">
+      <div class="modal-sheet">
+        <div class="modal-drag-handle"></div>
+        <div class="modal-header">
+          <div class="modal-title">🏆 Квиз Финграмотности</div>
+          <button class="btn-close-modal">✕</button>
+        </div>
+        <div id="quiz-content"></div>
+      </div>
+    </div>
+
+    <!-- MODAL: GOOGLE APPS SCRIPT ИНСТРУКЦИЯ И КОД -->
+    <div class="modal-overlay" id="modal-gas-script">
+      <div class="modal-sheet" style="max-height: 85vh;">
+        <div class="modal-drag-handle"></div>
+        <div class="modal-header">
+          <div class="modal-title">Google Таблицы: Инструкция</div>
+          <button class="btn-close-modal">✕</button>
+        </div>
+        <div style="font-size: 13px; line-height: 1.5; color: var(--text-secondary);">
+          <p><strong>Как подключить свою таблицу за 2 минуты:</strong></p>
+          <ol style="margin-left: 18px; margin-top: 6px; margin-bottom: 12px;">
+            <li>Создай новую Google Таблицу на <code>sheets.new</code></li>
+            <li>Открой меню: <strong>Расширения -> Apps Script</strong></li>
+            <li>Замени стандартный код на скрипт ниже и нажми Сохранить (Ctrl+S)</li>
+            <li>Нажми <strong>Развернуть -> Новое развертывание -> Веб-приложение</strong></li>
+            <li>Выбери доступ: <strong>"Все" (Anyone)</strong> и нажми Развернуть</li>
+            <li>Скопируй URL веб-приложения и вставь в настройки TeenFlow!</li>
+          </ol>
+          <textarea readonly style="width: 100%; height: 180px; font-family: monospace; font-size: 11px; background: var(--bg-surface-elevated); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 8px;" id="gas-code-box">
+function doPost(e) {
+  try {
+    var lock = LockService.getScriptLock();
+    lock.waitLock(10000);
+    var sheet = getOrCreateSheet();
+    var data = JSON.parse(e.postData.contents);
+    if (data.action === 'ping') return jsonResp({status:'ok'});
+    if (data.action === 'add_transaction') {
+      var t = data.transaction;
+      sheet.appendRow([t.id, t.date, t.type==='income'?'Доход':'Расход', t.category, t.amount, t.title||'', t.note||'', new Date().toISOString()]);
+      return jsonResp({status:'ok'});
+    }
+    if (data.action === 'batch_sync') {
+      (data.transactions||[]).forEach(function(t) {
+        sheet.appendRow([t.id, t.date, t.type==='income'?'Доход':'Расход', t.category, t.amount, t.title||'', t.note||'', new Date().toISOString()]);
+      });
+      return jsonResp({status:'ok', message: 'Синхронизировано'});
+    }
+    return jsonResp({status:'error'});
+  } catch(err) {
+    return jsonResp({status:'error', error: err.toString()});
+  } finally {
+    lock.releaseLock();
+  }
+}
+function doGet(e) { return jsonResp({status:'ok', message:'TeenFlow Webhook готов'}); }
+function getOrCreateSheet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('Транзакции') || ss.insertSheet('Транзакции');
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(['ID', 'Дата', 'Тип', 'Категория', 'Сумма', 'Название', 'Заметка', 'Время добавления']);
+  }
+  return sheet;
+}
+function jsonResp(d) { return ContentService.createTextOutput(JSON.stringify(d)).setMimeType(ContentService.MimeType.JSON); }
+          </textarea>
+        </div>
+        <button class="btn-primary" style="margin-top: 12px;" onclick="navigator.clipboard.writeText(document.getElementById('gas-code-box').value); alert('Код скопирован в буфер обмена!');">
+          📋 Скопировать код скрипта
+        </button>
+      </div>
+    </div>
+
+    <!-- Undo Snackbar (iOS / Material 3) -->
+    <div class="snackbar" id="undo-snackbar">
+      <span class="snackbar-text" id="snackbar-text">🗑️ Операция удалена</span>
+      <button class="snackbar-undo-btn" id="snackbar-undo-btn">Отменить</button>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+  </div>
+
+  <!-- Expose global tab switcher helper for inline onclicks -->
+  <script>
+    window.teenAppSwitchTab = function(tabName) {
+      if (window.switchTeenTab) {
+        window.switchTeenTab(tabName);
+      }
+    };
+  </script>
+
+  <!-- ES Modules Entry -->
+  <script type="module">
+    import { switchTab } from './js/app.js';
+    window.switchTeenTab = switchTab;
+  </script>
+</body>
+</html>
