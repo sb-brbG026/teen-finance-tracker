@@ -60,6 +60,7 @@ export const DEFAULT_MISTRAL_API_KEY = '';
  */
 export async function askAdvisor(userPrompt, transactions) {
   const mistralKey = await getSetting('mistral_api_key', '');
+  const chosenModel = await getSetting('mistral_model', 'open-mistral-nemo');
   const apiKey = (mistralKey && mistralKey.trim().length > 0) ? mistralKey.trim() : DEFAULT_MISTRAL_API_KEY;
   const summary = calculateSummary(transactions, 'month');
   const goals = await getGoals();
@@ -67,10 +68,22 @@ export async function askAdvisor(userPrompt, transactions) {
   // Если задан Mistral API ключ, отправляем прямой онлайн-запрос
   if (apiKey && apiKey.length > 5) {
     try {
-      const response = await callMistralAPI(apiKey, userPrompt, summary, goals);
+      const response = await callMistralAPI(apiKey, userPrompt, summary, goals, chosenModel);
       return response;
     } catch (err) {
       console.warn('Ошибка вызова Mistral API:', err);
+
+      // Если 429 Rate Limit на выбранной модели — пробуем альтернативную бесплатную open-mistral-7b
+      if ((err.message.includes('429') || err.message.toLowerCase().includes('rate limit')) && chosenModel !== 'open-mistral-7b') {
+        try {
+          console.info('Пробуем резервную free-tier модель open-mistral-7b...');
+          const fallbackResp = await callMistralAPI(apiKey, userPrompt, summary, goals, 'open-mistral-7b');
+          return fallbackResp;
+        } catch (retryErr) {
+          console.warn('Резервная модель тоже вернула ошибку:', retryErr);
+        }
+      }
+
       const offlineReply = generateOfflineAdvisorResponse(userPrompt, summary, goals);
 
       let errorReason = err.message || 'Ошибка соединения';
@@ -78,6 +91,8 @@ export async function askAdvisor(userPrompt, transactions) {
         errorReason = 'Таймаут соединения (15 сек). Сервер api.mistral.ai не отвечает без VPN.';
       } else if (err.message && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
         errorReason = 'Браузеру не удалось связаться с api.mistral.ai (заблокировано провайдером/Cloudflare без VPN).';
+      } else if (err.message && (err.message.includes('429') || err.message.toLowerCase().includes('rate limit'))) {
+        errorReason = 'Превышен лимит запросов Mistral (Rate limit exceeded / 429). Подожди 10-20 секунд или выбери open-mistral-7b в Настройках.';
       } else if (err.message && err.message.includes('Invalid API Key')) {
         errorReason = 'Указан неверный API-ключ Mistral. Проверь его в Настройках.';
       }
@@ -147,9 +162,9 @@ function generateOfflineAdvisorResponse(prompt, summary, goals) {
 
 /**
  * Вызов официального Mistral AI API
- * Модель: mistral-small-latest (быстрая, умная, без гео-блокировок в Беларуси)
+ * Модели Free Tier: open-mistral-nemo (12B, быстрая, умная), open-mistral-7b (7B)
  */
-async function callMistralAPI(apiKey, userPrompt, summary, goals) {
+async function callMistralAPI(apiKey, userPrompt, summary, goals, model = 'open-mistral-nemo') {
   const url = 'https://api.mistral.ai/v1/chat/completions';
 
   const systemInstruction = `Ты — Фин, дружелюбный, крутой и современный финансовый ментор для подростков (12-18 лет). 
@@ -160,10 +175,10 @@ async function callMistralAPI(apiKey, userPrompt, summary, goals) {
 - Баланс: ${summary.balance}
 - Топ расходов по категориям: ${JSON.stringify(summary.expenseByCategory)}
 - Текущие цели накопления: ${JSON.stringify(goals.map(g => ({ name: g.name, target: g.targetAmount, current: g.currentAmount })))}
-Отвечай кратко (2-4 абзаца), практично и с юмором. Не используй значков валют.`;
+Отвечай кратко (2-3 абзаца), практично и с юмором. Не используй значков валют.`;
 
   const payload = {
-    model: 'mistral-small-latest',
+    model: model || 'open-mistral-nemo',
     messages: [
       {
         role: 'system',
@@ -175,7 +190,7 @@ async function callMistralAPI(apiKey, userPrompt, summary, goals) {
       }
     ],
     temperature: 0.7,
-    max_tokens: 800
+    max_tokens: 600
   };
 
   const controller = new AbortController();

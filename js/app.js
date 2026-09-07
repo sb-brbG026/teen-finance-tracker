@@ -447,6 +447,11 @@ async function renderSettingsTab() {
     mistralInput.value = savedKey || DEFAULT_MISTRAL_API_KEY;
   }
 
+  const mistralModelSelect = document.getElementById('mistral-model-select');
+  if (mistralModelSelect) {
+    mistralModelSelect.value = await getSetting('mistral_model', 'open-mistral-nemo');
+  }
+
   // Список категорий для настройки
   const catSettingsContainer = document.getElementById('categories-settings-list');
   if (catSettingsContainer) {
@@ -1019,8 +1024,11 @@ function initEventListeners() {
   saveMistralBtn?.addEventListener('click', async () => {
     const input = document.getElementById('mistral-key-input') || document.getElementById('gemini-key-input');
     const key = input?.value;
+    const modelSelect = document.getElementById('mistral-model-select');
+    const model = modelSelect ? modelSelect.value : 'open-mistral-nemo';
     await setSetting('mistral_api_key', (key || '').trim());
-    showToast('Ключ Mistral AI сохранен! 🤖', 'success');
+    await setSetting('mistral_model', model);
+    showToast('Настройки Mistral AI сохранены! 🤖', 'success');
   });
 
   // Кнопка показа скрипта для копирования

@@ -297,12 +297,22 @@
       <div class="card">
         <div class="section-title" style="margin-bottom: 8px;">🤖 ИИ-Ментор: Mistral AI</div>
         <p class="text-xs text-secondary" style="margin-bottom: 10px;">
-          Работает в Беларуси без VPN. Получи бесплатный ключ на <a href="https://console.mistral.ai/api-keys" target="_blank" rel="noopener" style="color: var(--primary); text-decoration: underline; font-weight: 600;">console.mistral.ai</a> и вставь его сюда:
+          Получи бесплатный ключ на <a href="https://console.mistral.ai/api-keys" target="_blank" rel="noopener" style="color: var(--primary); text-decoration: underline; font-weight: 600;">console.mistral.ai</a> и вставь его сюда:
         </p>
-        <div class="form-group">
+        <div class="form-group" style="margin-bottom: 10px;">
+          <label class="form-label" style="font-size: 0.75rem; margin-bottom: 4px; color: var(--text-secondary);">API Ключ:</label>
           <input type="password" id="mistral-key-input" class="form-input" placeholder="Введи Mistral API Key">
         </div>
-        <button class="btn-secondary" id="btn-save-mistral-key" style="margin-top: 0;">Сохранить ключ Mistral</button>
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label class="form-label" style="font-size: 0.75rem; margin-bottom: 4px; color: var(--text-secondary);">Модель (Free Tier):</label>
+          <select id="mistral-model-select" class="form-select" style="width: 100%; padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); font-size: 0.85rem;">
+            <option value="open-mistral-nemo" selected>open-mistral-nemo (Free Tier, 12B — рекомендуется)</option>
+            <option value="open-mistral-7b">open-mistral-7b (Free Tier, 7B — легкая и быстрая)</option>
+            <option value="ministral-8b-latest">ministral-8b-latest (Компактная)</option>
+            <option value="mistral-small-latest">mistral-small-latest (Pay-as-you-go)</option>
+          </select>
+        </div>
+        <button class="btn-secondary" id="btn-save-mistral-key" style="margin-top: 0;">Сохранить настройки Mistral</button>
       </div>
 
       <!-- Backup & Data Card -->
