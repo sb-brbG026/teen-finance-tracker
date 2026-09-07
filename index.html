@@ -309,11 +309,15 @@
       <div class="card">
         <div class="section-title" style="margin-bottom: 10px;">💾 Резервная копия и Экспорт</div>
         <div style="display: flex; flex-direction: column; gap: 8px;">
-          <button class="btn-secondary" id="btn-export-csv" style="margin-top: 0;">
-            📥 Экспорт в CSV (Excel / Таблицы)
-          </button>
           <button class="btn-secondary" id="btn-export-json" style="margin-top: 0;">
-            📦 Полный бэкап (JSON)
+            📦 Скачать бэкап (JSON)
+          </button>
+          <label class="btn-secondary" style="margin-top: 0; text-align: center; cursor: pointer;">
+            📥 Восстановить из JSON бэкапа
+            <input type="file" id="json-file-input" accept=".json,application/json" style="display: none;">
+          </label>
+          <button class="btn-secondary" id="btn-export-csv" style="margin-top: 0;">
+            📊 Экспорт в CSV (Excel / Таблицы)
           </button>
           <label class="btn-secondary" style="margin-top: 0; text-align: center; cursor: pointer;">
             📤 Импорт из CSV файла

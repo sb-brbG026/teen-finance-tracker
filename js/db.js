@@ -303,23 +303,38 @@ export async function exportAllData() {
 }
 
 export async function importAllData(data) {
-  if (!data || !data.transactions) throw new Error('Некорректный формат данных');
+  if (!data) throw new Error('Файл резервной копии пуст');
 
+  const txList = Array.isArray(data) ? data : data.transactions;
+  if (!txList || !Array.isArray(txList)) {
+    throw new Error('Некорректный формат: не найден список операций');
+  }
+
+  let categoriesCount = 0;
   if (Array.isArray(data.categories) && data.categories.length > 0) {
     await saveCategories(data.categories);
+    categoriesCount = data.categories.length;
   }
 
-  for (const t of data.transactions) {
+  let txCount = 0;
+  for (const t of txList) {
     await addTransaction(t);
+    txCount++;
   }
 
+  let goalsCount = 0;
   if (Array.isArray(data.goals)) {
     for (const g of data.goals) {
       await saveGoal(g);
+      goalsCount++;
     }
   }
 
-  return true;
+  return {
+    transactionsCount: txCount,
+    categoriesCount,
+    goalsCount
+  };
 }
 
 // === ГЕНЕРАТОР ДЕМО-ДАННЫХ ДЛЯ ТЕСТИРОВАНИЯ ===

@@ -1022,6 +1022,23 @@ function initEventListeners() {
     showToast('Резервная копия скачана', 'success');
   });
 
+  document.getElementById('json-file-input')?.addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      const res = await importAllData(data);
+      showToast(`Бэкап восстановлен: ${res.transactionsCount} операций, ${res.goalsCount} целей! 📦`, 'success');
+      vibrate(40);
+      await refreshData();
+      renderApp();
+    } catch (err) {
+      showToast('Ошибка импорта JSON: ' + err.message, 'error');
+    }
+    e.target.value = '';
+  });
+
   document.getElementById('csv-file-input')?.addEventListener('change', async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
