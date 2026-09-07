@@ -622,7 +622,8 @@
   border: 1px solid var(--border-color);
   border-bottom: none;
   padding: 20px 20px calc(24px + env(safe-area-inset-bottom, 16px));
-  max-height: 90vh;
+  max-height: calc(90vh - env(safe-area-inset-top, 0px));
+  margin-top: env(safe-area-inset-top, 0px);
   overflow-y: auto;
   animation: slideUp 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }

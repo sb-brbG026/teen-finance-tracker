@@ -63,6 +63,7 @@ async function initTheme() {
   const savedTheme = await getSetting('app_theme', 'dark');
   state.theme = savedTheme;
   document.documentElement.setAttribute('data-theme', state.theme);
+  updateThemeMetaColor();
   updateThemeToggleIcon();
 }
 
@@ -70,10 +71,18 @@ function toggleTheme() {
   state.theme = state.theme === 'dark' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', state.theme);
   setSetting('app_theme', state.theme);
+  updateThemeMetaColor();
   updateThemeToggleIcon();
   vibrate(30);
   // Перерисовываем графики под новую тему
   renderAnalyticsTab();
+}
+
+function updateThemeMetaColor() {
+  const meta = document.getElementById('theme-color-meta');
+  if (meta) {
+    meta.setAttribute('content', state.theme === 'dark' ? '#0f172a' : '#ffffff');
+  }
 }
 
 function updateThemeToggleIcon() {
